@@ -36,15 +36,33 @@ const ResumeBuilder = () => {
   const [isOptimizing, setIsOptimizing] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("blackforge_resume");
-    if (saved) {
-      setResumeData(JSON.parse(saved));
-    }
+    const fetchResume = async () => {
+      try {
+        const res = await fetch("/api/resumes");
+        if (res.ok) {
+          const { resume } = await res.json();
+          if (resume && resume.content) {
+            setResumeData(resume.content);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch resume:", err);
+      }
+    };
+    fetchResume();
   }, []);
 
-  const saveResume = (data: ResumeData) => {
+  const saveResume = async (data: ResumeData) => {
     setResumeData(data);
-    localStorage.setItem("blackforge_resume", JSON.stringify(data));
+    try {
+      await fetch("/api/resumes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: data.name, content: data }),
+      });
+    } catch (err) {
+      console.error("Failed to save resume:", err);
+    }
   };
 
   const updateField = (field: keyof ResumeData, value: string) => {
@@ -69,16 +87,34 @@ const ResumeBuilder = () => {
     toast.success("Experience removed");
   };
 
-  const handleOptimize = () => {
+  const handleOptimize = async () => {
     setIsOptimizing(true);
-    setTimeout(() => {
-      saveResume({
-        ...resumeData,
-        summary: "Visionary AI Engineer driving innovation in autonomous agent architectures and large-scale model orchestration. Proven track record of architecting deep learning pipelines that accelerate development life cycles and bypass traditional computational bottlenecks."
+    try {
+      const res = await fetch("/api/ai/optimize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          resumeText: JSON.stringify(resumeData), 
+          jobDescription: resumeData.role // Using role as a proxy for JD if not provided
+        }),
       });
+
+      if (res.ok) {
+        const data = await res.json();
+        const updatedResume = {
+          ...resumeData,
+          summary: data.optimizedSummary || resumeData.summary
+        };
+        saveResume(updatedResume);
+        toast.success("Summary optimized by AI");
+      } else {
+        toast.error("Optimization failed.");
+      }
+    } catch (err) {
+      toast.error("An error occurred during optimization.");
+    } finally {
       setIsOptimizing(false);
-      toast.success("Summary optimized by AI");
-    }, 1500);
+    }
   };
 
   const handlePrint = () => {

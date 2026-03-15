@@ -37,27 +37,48 @@ const JobDiscovery = () => {
   const [showSavedOnly, setShowSavedOnly] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("blackforge_saved_jobs");
-    if (saved) {
-      setSavedJobs(JSON.parse(saved));
-    }
+    const fetchSavedJobs = async () => {
+      try {
+        const res = await fetch("/api/jobs/saved");
+        if (res.ok) {
+          const data = await res.json();
+          setSavedJobs(data.jobs.map((j: { job_id: string }) => j.job_id) || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch saved jobs:", err);
+      }
+    };
+    fetchSavedJobs();
   }, []);
 
-  const toggleSaveJob = (id: string, e: React.MouseEvent) => {
+  const toggleSaveJob = async (job: Job, e: React.MouseEvent) => {
     e.stopPropagation();
-    let newSaved;
-    if (savedJobs.includes(id)) {
-      newSaved = savedJobs.filter(jobId => jobId !== id);
-      toast.success("Job removed from saved list");
-    } else {
-      newSaved = [...savedJobs, id];
-      toast.success("Job saved successfully!");
+    const isSaved = savedJobs.includes(job.id);
+    
+    try {
+      if (isSaved) {
+        const res = await fetch(`/api/jobs/saved?jobId=${job.id}`, { method: "DELETE" });
+        if (res.ok) {
+          setSavedJobs(savedJobs.filter(id => id !== job.id));
+          toast.success("Job removed from saved list");
+        }
+      } else {
+        const res = await fetch("/api/jobs/saved", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ job }),
+        });
+        if (res.ok) {
+          setSavedJobs([...savedJobs, job.id]);
+          toast.success("Job saved successfully!");
+        }
+      }
+    } catch {
+      toast.error("An error occurred.");
     }
-    setSavedJobs(newSaved);
-    localStorage.setItem("blackforge_saved_jobs", JSON.stringify(newSaved));
   };
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!query && !location) {
       toast.error("Please enter a role or location to search");
       return;
@@ -66,12 +87,25 @@ const JobDiscovery = () => {
     setLoading(true);
     setShowSavedOnly(false);
     
-    // Simulate real search crawl
-    setTimeout(() => {
-      setDisplayedJobs([...searchedJobs, ...initialJobs].slice(0, 4));
+    try {
+      const res = await fetch("/api/jobs/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, location }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setDisplayedJobs(data.jobs || []);
+        toast.success(`Found ${data.jobs.length} new opportunities matching your profile.`);
+      } else {
+        toast.error("Failed to discover jobs.");
+      }
+    } catch {
+      toast.error("Search failed.");
+    } finally {
       setLoading(false);
-      toast.success(`Found 4 new opportunities matching your profile.`);
-    }, 2000);
+    }
   };
 
   const visibleJobs = showSavedOnly 
@@ -199,7 +233,7 @@ const JobDiscovery = () => {
                         {job.type}
                       </span>
                       <button 
-                        onClick={(e) => toggleSaveJob(job.id, e)}
+                        onClick={(e) => toggleSaveJob(job, e)}
                         className={`p-3 rounded-xl transition-all border ${
                           savedJobs.includes(job.id)
                             ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"

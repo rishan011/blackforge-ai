@@ -1,0 +1,19 @@
+<svg width="180" height="40" viewBox="0 0 180 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icon Container -->
+  <rect x="2" y="4" width="32" height="32" rx="10" fill="url(#brand_gradient)" />
+  
+  <!-- AI / Productivity Icon -->
+  <path d="M18 10V26M10 18H26" stroke="white" stroke-width="2" stroke-linecap="round" />
+  <circle cx="18" cy="18" r="5" stroke="white" stroke-width="1.5" stroke-opacity="0.6" />
+  <path d="M14 14L22 22M22 14L14 22" stroke="white" stroke-width="1" stroke-opacity="0.4" />
+  
+  <!-- Text -->
+  <text x="46" y="28" fill="white" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="24" letter-spacing="-0.02em">NeeDee</text>
+  
+  <defs>
+    <linearGradient id="brand_gradient" x1="2" y1="4" x2="34" y2="36" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#A855F7"/>
+    </linearGradient>
+  </defs>
+</svg>

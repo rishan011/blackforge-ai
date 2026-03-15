@@ -80,7 +80,7 @@ export async function searchJobs(query: string, location: string = "Remote"): Pr
     }
 
     // Map Firecrawl results to our JobResult interface
-    return data.data.map((item: any, index: number) => ({
+    return data.data.map((item: { title: string; url: string; description?: string; metadata?: { siteName?: string }; markdown?: string }, index: number) => ({
       title: item.title || `${query} Role`,
       company: item.metadata?.siteName || new URL(item.url || "https://example.com").hostname.replace("www.", ""),
       location: location,

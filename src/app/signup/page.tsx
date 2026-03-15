@@ -5,35 +5,40 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { LogIn, Command } from "lucide-react";
+import { UserPlus, Command } from "lucide-react";
 import Link from "next/link";
 
-export default function LoginPage() {
+export default function SignupPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
+      // In a real app, you'd call a signup API here.
+      // For this implementation, we'll use the NextAuth credentials provider
+      // which handles the "upsert" to Supabase via the signIn callback.
       const res = await signIn("credentials", {
         redirect: false,
         email,
         password,
+        name, // Passing name to sign-in for persistence
       });
 
       if (res?.error) {
-        toast.error("Invalid credentials.");
+        toast.error("Failed to create account.");
       } else {
-        toast.success("Authentication successful. Initializing workspace...");
+        toast.success("Account created successfully! Welcome to BlackForge.");
         router.push("/dashboard");
         router.refresh();
       }
     } catch (err) {
-      toast.error("An error occurred during authentication.");
+      toast.error("An error occurred during signup.");
     } finally {
       setIsLoading(false);
     }
@@ -51,14 +56,12 @@ export default function LoginPage() {
         className="w-full max-w-md"
       >
         <div className="metallic-card p-8 rounded-2xl border border-white/10 glass shadow-2xl relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-vr from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-          
           <div className="flex flex-col items-center mb-8 relative z-10">
             <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-4">
               <Command className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-white mb-2">Welcome Back</h1>
-            <p className="text-zinc-400 text-sm text-center">Sign in to your BlackForge account to continue.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-white mb-2">Create Account</h1>
+            <p className="text-zinc-400 text-sm text-center">Join the next generation of high-performance builders.</p>
           </div>
 
           <div className="relative z-10 space-y-6">
@@ -74,7 +77,7 @@ export default function LoginPage() {
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               </svg>
-              Continue with Google
+              Sign up with Google
             </button>
 
             <div className="relative">
@@ -86,29 +89,38 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleSignup} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold tracking-wider text-zinc-400 uppercase">Full Name</label>
+                <input 
+                  type="text" 
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/30 transition-all font-mono text-sm"
+                  placeholder="John Doe"
+                  required
+                />
+              </div>
+
               <div className="space-y-2">
                 <label className="text-xs font-semibold tracking-wider text-zinc-400 uppercase">Email Address</label>
                 <input 
                   type="email" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/30 transition-all font-mono text-sm"
+                  className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/30 transition-all font-mono text-sm"
                   placeholder="name@example.com"
                   required
                 />
               </div>
               
               <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-semibold tracking-wider text-zinc-400 uppercase">Password</label>
-                  <a href="#" className="text-xs text-zinc-500 hover:text-white transition-colors">Forgot password?</a>
-                </div>
+                <label className="text-xs font-semibold tracking-wider text-zinc-400 uppercase">Password</label>
                 <input 
                   type="password" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/30 focus:ring-1 focus:ring-white/30 transition-all font-mono text-sm"
+                  className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/30 transition-all font-mono text-sm"
                   placeholder="••••••••"
                   required
                 />
@@ -123,8 +135,8 @@ export default function LoginPage() {
                   <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
                 ) : (
                   <>
-                    <LogIn className="w-4 h-4" />
-                    Sign In
+                    <UserPlus className="w-4 h-4" />
+                    Create Account
                   </>
                 )}
               </button>
@@ -132,7 +144,7 @@ export default function LoginPage() {
 
             <div className="mt-6 pt-6 border-t border-white/5 text-center">
               <p className="text-sm text-zinc-500">
-                Don&apos;t have an account? <Link href="/signup" className="text-white hover:underline transition-all">Sign up</Link>
+                Already have an account? <Link href="/login" className="text-white hover:underline transition-all">Sign in</Link>
               </p>
             </div>
           </div>

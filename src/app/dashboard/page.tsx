@@ -14,8 +14,12 @@ import {
   ArrowUpRight
 } from "lucide-react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 const Dashboard = () => {
+  const { data: session } = useSession();
+  const userName = session?.user?.name || "Forge Master";
+
   const cards = [
     { title: "Resume Builder", icon: FileText, desc: "Create ATS-friendly resumes", link: "/resume", color: "from-blue-500/20" },
     { title: "Content Intelligence", icon: Youtube, desc: "Summarize any link instantly", link: "/youtube", color: "from-emerald-500/20" },
@@ -30,7 +34,9 @@ const Dashboard = () => {
 
       <div className="pt-32 px-6 max-w-7xl mx-auto">
         <header className="mb-12">
-          <h1 className="text-4xl font-bold tracking-tight mb-2 shimmer-text">Welcome back, Forge Master</h1>
+          <h1 className="text-4xl font-bold tracking-tight mb-2 shimmer-text">
+            Welcome back, {userName}
+          </h1>
           <p className="text-zinc-400">Your AI-powered productivity control center.</p>
         </header>
 

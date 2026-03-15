@@ -10,9 +10,10 @@ import { toast } from "sonner";
 interface Note {
   id: string;
   title: string;
-  date: string;
+  date?: string;
   content: string;
   tag: string;
+  created_at?: string;
 }
 
 const NotesSaver = () => {
@@ -23,49 +24,66 @@ const NotesSaver = () => {
   const [newNote, setNewNote] = useState({ title: "", content: "", tag: "General" });
   
   useEffect(() => {
-    const saved = localStorage.getItem("blackforge_notes");
-    if (saved) {
-      setNotes(JSON.parse(saved));
-    } else {
-      setNotes([
-        { id: "1", title: "Project Launch Plan", date: "Mar 15, 2026", content: "Key objectives for the BlackForge AI release...", tag: "Work" },
-        { id: "2", title: "Three.js Optimization", date: "Mar 14, 2026", content: "Notes on reducing draw calls and geometry simpl...", tag: "Research" },
-        { id: "3", title: "UI Inspiration", date: "Mar 12, 2026", content: "Dark mode, metallic surfaces, glassmorphism ref...", tag: "Design" },
-      ]);
-    }
+    const fetchNotes = async () => {
+      try {
+        const res = await fetch("/api/notes");
+        if (res.ok) {
+          const data = await res.json();
+          setNotes(data.notes || []);
+        }
+      } catch {
+        console.error("Failed to fetch notes");
+      }
+    };
+    fetchNotes();
   }, []);
 
-  useEffect(() => {
-    if (notes.length > 0) {
-      localStorage.setItem("blackforge_notes", JSON.stringify(notes));
-    }
-  }, [notes]);
-
-  const handleCreateNote = (e: React.FormEvent) => {
+  const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNote.title || !newNote.content) {
       toast.error("Title and content are required.");
       return;
     }
     
-    const note: Note = {
-      id: Date.now().toString(),
-      title: newNote.title,
-      content: newNote.content,
-      tag: newNote.tag,
-      date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-    };
-    
-    setNotes([note, ...notes]);
-    toast.success("Note saved successfully!");
-    setNewNote({ title: "", content: "", tag: "General" });
-    setIsModalOpen(false);
+    try {
+      const res = await fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newNote),
+      });
+
+      if (res.ok) {
+        const { note } = await res.json();
+        // Format the date for the UI
+        const formattedNote = {
+          ...note,
+          date: new Date(note.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        };
+        setNotes([formattedNote, ...notes]);
+        toast.success("Note saved successfully!");
+        setNewNote({ title: "", content: "", tag: "General" });
+        setIsModalOpen(false);
+      } else {
+        toast.error("Failed to save note.");
+      }
+    } catch {
+      toast.error("An error occurred.");
+    }
   };
 
-  const deleteNote = (id: string, e: React.MouseEvent) => {
+  const deleteNote = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setNotes(notes.filter(n => n.id !== id));
-    toast.success("Note deleted");
+    try {
+      const res = await fetch(`/api/notes?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setNotes(notes.filter(n => n.id !== id));
+        toast.success("Note deleted");
+      } else {
+        toast.error("Failed to delete note.");
+      }
+    } catch {
+      toast.error("An error occurred.");
+    }
   };
 
   const filteredNotes = notes.filter(n => 
@@ -155,7 +173,7 @@ const NotesSaver = () => {
                 <div className="flex items-center justify-between text-[11px] font-bold text-zinc-600 uppercase tracking-widest mt-auto pt-4 border-t border-white/5">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-3 h-3" />
-                    {note.date}
+                    {note.date || (note.created_at ? new Date(note.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recently")}
                   </div>
                   <div className="flex items-center gap-2 text-emerald-500/0 group-hover:text-emerald-500 transition-all">
                     <Sparkles className="w-3 h-3" />
@@ -169,7 +187,7 @@ const NotesSaver = () => {
 
         {filteredNotes.length === 0 && (
           <div className="text-center py-20">
-            <p className="text-zinc-500 text-lg">No notes found matching "{search}"</p>
+            <p className="text-zinc-500 text-lg">No notes found matching &quot;{search}&quot;</p>
           </div>
         )}
       </div>
