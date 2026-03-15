@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       try {
         const { error } = await supabase.from("summaries").insert([
           {
-            user_id: session.user.id || session.user.email,
+            user_id: session.user.email, // Use email as the identifier
             youtube_url: url,
             title: url.includes("youtube.com") ? "YouTube Video" : "Web Article",
             summary: summary,

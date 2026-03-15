@@ -61,7 +61,7 @@ export async function PATCH(req: Request) {
         .from("users")
         .upsert(
           { 
-            id: session.user.id || session.user.email, // Use id if available, fallback to email as unique ID
+            id: session.user.email, 
             email: session.user.email, 
             name: name.trim() 
           },
