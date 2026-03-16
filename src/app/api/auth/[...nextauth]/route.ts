@@ -34,18 +34,34 @@ const handler = NextAuth({
   ],
   callbacks: {
     async signIn({ user }) {
-      if (user.email) {
+      if (!user.email) return false;
+      
+      try {
         await upsertUser({
-          id: user.email, // Use email as ID for simplicity in this schema
+          id: user.email, 
           email: user.email,
           name: user.name || user.email.split("@")[0]
         });
+        return true;
+      } catch (error) {
+        console.error("[NextAuth] Error in signIn callback:", error);
+        // We still allow sign-in even if DB upsert fails to prevent lockouts,
+        // or return false if you want to force DB success.
+        return true; 
       }
-      return true;
     },
-    async session({ session }) {
+    async session({ session, token }) {
+      if (session.user && token.email) {
+        (session.user as any).id = token.email;
+      }
       return session;
     },
+    async jwt({ token, user }) {
+      if (user) {
+        token.email = user.email;
+      }
+      return token;
+    }
   },
   pages: {
     signIn: '/login',
@@ -54,6 +70,7 @@ const handler = NextAuth({
     strategy: "jwt",
   },
   secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === "development", // Set to true to debug production issues
 });
 
 export { handler as GET, handler as POST };
