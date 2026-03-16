@@ -38,16 +38,14 @@ const handler = NextAuth({
       if (!user.email) return false;
       
       try {
-        // [SAFE MODE] Temporarily bypassing DB sync to isolate OAuthCallback issue
-        /*
+        // [FULL SYNC] Safe-mode confirmed environment issue; re-enabling DB synchronization
         await upsertUser({
           email: user.email,
           name: user.name || user.email.split("@")[0]
         });
-        */
         return true;
       } catch (error) {
-        console.error("[NextAuth] Safe-mode log:", error);
+        console.error("[NextAuth] DB Sync failed, but allowing login to proceed:", error);
         return true; 
       }
     },
