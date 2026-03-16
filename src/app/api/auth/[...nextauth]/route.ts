@@ -8,6 +8,7 @@ const handler = NextAuth({
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      allowDangerousEmailAccountLinking: true,
       authorization: {
         params: {
           prompt: "select_account",
@@ -50,14 +51,19 @@ const handler = NextAuth({
       }
     },
     async session({ session, token }) {
-      if (session.user && token.email) {
-        (session.user as any).id = token.email;
+      if (session.user) {
+        (session.user as any).id = token.sub;
+        (session.user as any).email = token.email;
       }
       return session;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
+        token.id = user.id;
         token.email = user.email;
+      }
+      if (account) {
+        token.accessToken = account.access_token;
       }
       return token;
     }
