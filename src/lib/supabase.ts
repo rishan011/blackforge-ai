@@ -60,21 +60,18 @@ export async function getUserResumes(userId: string) {
 }
 
 export async function upsertUser(user: {
-  id?: string;
   email: string;
   name?: string;
 }) {
   if (!supabase) return null;
   
-  // Create the upsert object. If ID is provided and looks like a UUID (or is email), we include it.
-  // Otherwise, we rely on email as the selector.
-  const userData: any = { 
+  const userData = { 
     email: user.email, 
     name: user.name 
   };
-  
-  if (user.id) userData.id = user.id;
 
+  // We use upsert with onConflict email to ensure we don't create duplicates
+  // and we don't force an ID which might not match the DB's type (e.g. UUID).
   const { data, error } = await supabase.from("users").upsert(
     [userData],
     { onConflict: "email" }
@@ -82,8 +79,7 @@ export async function upsertUser(user: {
   
   if (error) {
     console.error("[Supabase] upsertUser error:", error);
-    // Special handling for common errors
-    if (error.code === "23505") console.error("[Supabase] Conflict error - user may already exist.");
+    throw error; // Throw so the caller knows it failed
   }
   return data;
 }

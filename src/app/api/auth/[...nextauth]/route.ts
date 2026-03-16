@@ -37,16 +37,15 @@ const handler = NextAuth({
       if (!user.email) return false;
       
       try {
+        // Sync user to Supabase
         await upsertUser({
-          id: user.email, 
           email: user.email,
           name: user.name || user.email.split("@")[0]
         });
         return true;
       } catch (error) {
-        console.error("[NextAuth] Error in signIn callback:", error);
-        // We still allow sign-in even if DB upsert fails to prevent lockouts,
-        // or return false if you want to force DB success.
+        console.error("[NextAuth] DB Sync failed, but allowing login to proceed:", error);
+        // Important: We return true so the user can still log in even if our DB sync has a hiccup
         return true; 
       }
     },
@@ -70,7 +69,7 @@ const handler = NextAuth({
     strategy: "jwt",
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === "development", // Set to true to debug production issues
+  debug: true, // Force debug logs in production to find the OAuthCallback cause
 });
 
 export { handler as GET, handler as POST };
