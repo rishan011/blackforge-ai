@@ -3,6 +3,12 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { upsertUser } from "@/lib/supabase";
 
+console.log("[NextAuth] Environment Check:", {
+  URL: process.env.NEXTAUTH_URL,
+  SECRET_SET: !!process.env.NEXTAUTH_SECRET,
+  NODE_ENV: process.env.NODE_ENV
+});
+
 const handler = NextAuth({
   providers: [
     GoogleProvider({
