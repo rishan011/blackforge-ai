@@ -51,20 +51,32 @@ const handler = NextAuth({
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.sub || token.id;
-        (session.user as any).email = token.email;
+        (session.user as any).id = token.sub;
       }
       return session;
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.email = user.email;
-      }
-      if (account) {
-        token.accessToken = account.access_token;
       }
       return token;
+    },
+    async redirect({ url, baseUrl }) {
+      // Hardening: Prevent cross-domain redirect issues
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
+    }
+  },
+  logger: {
+    error(code, metadata) {
+      console.error("[NextAuth Error]", code, metadata);
+    },
+    warn(code) {
+      console.warn("[NextAuth Warn]", code);
+    },
+    debug(code, metadata) {
+      console.log("[NextAuth Debug]", code, metadata);
     }
   },
   pages: {
@@ -72,9 +84,10 @@ const handler = NextAuth({
   },
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true, // Force debug logs in production to find the OAuthCallback cause
+  debug: true,
 });
 
 export { handler as GET, handler as POST };
