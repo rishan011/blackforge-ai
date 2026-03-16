@@ -8,14 +8,6 @@ const handler = NextAuth({
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-      allowDangerousEmailAccountLinking: true,
-      authorization: {
-        params: {
-          prompt: "select_account",
-          access_type: "offline",
-          response_type: "code",
-        },
-      },
     }),
     CredentialsProvider({
       name: "Account",
@@ -24,8 +16,6 @@ const handler = NextAuth({
         password: { label: "Password", type: "password", placeholder: "password" }
       },
       async authorize(credentials) {
-        // [Placeholder for real authentication logic]
-        // For now, we allow sign-in if credentials are provided
         if (credentials?.email && credentials?.password) {
           return { id: credentials.email, email: credentials.email, name: credentials.email.split("@")[0] };
         }
@@ -35,23 +25,11 @@ const handler = NextAuth({
   ],
   callbacks: {
     async signIn({ user }) {
-      if (!user.email) return false;
-      
-      try {
-        // [FULL SYNC] Safe-mode confirmed environment issue; re-enabling DB synchronization
-        await upsertUser({
-          email: user.email,
-          name: user.name || user.email.split("@")[0]
-        });
-        return true;
-      } catch (error) {
-        console.error("[NextAuth] DB Sync failed, but allowing login to proceed:", error);
-        return true; 
-      }
+      return true;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.sub;
+        (session.user as any).id = token.sub || token.id;
       }
       return session;
     },
@@ -61,58 +39,12 @@ const handler = NextAuth({
       }
       return token;
     },
-    async redirect({ url, baseUrl }) {
-      // Hardening: Prevent cross-domain redirect issues
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
-      else if (new URL(url).origin === baseUrl) return url;
-      return baseUrl;
-    }
-  },
-  logger: {
-    error(code, metadata) {
-      console.error("[NextAuth Error]", code, metadata);
-    },
-    warn(code) {
-      console.warn("[NextAuth Warn]", code);
-    },
-    debug(code, metadata) {
-      console.log("[NextAuth Debug]", code, metadata);
-    }
   },
   pages: {
     signIn: '/login',
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
-  cookies: {
-    sessionToken: {
-      name: `next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === "production"
-      }
-    },
-    callbackUrl: {
-      name: `next-auth.callback-url`,
-      options: {
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === "production"
-      }
-    },
-    csrfToken: {
-      name: `next-auth.csrf-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === "production"
-      }
-    },
   },
   secret: process.env.NEXTAUTH_SECRET,
   debug: true,
