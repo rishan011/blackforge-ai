@@ -38,21 +38,22 @@ const handler = NextAuth({
       if (!user.email) return false;
       
       try {
-        // Sync user to Supabase
+        // [SAFE MODE] Temporarily bypassing DB sync to isolate OAuthCallback issue
+        /*
         await upsertUser({
           email: user.email,
           name: user.name || user.email.split("@")[0]
         });
+        */
         return true;
       } catch (error) {
-        console.error("[NextAuth] DB Sync failed, but allowing login to proceed:", error);
-        // Important: We return true so the user can still log in even if our DB sync has a hiccup
+        console.error("[NextAuth] Safe-mode log:", error);
         return true; 
       }
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.sub;
+        (session.user as any).id = token.sub || token.id;
         (session.user as any).email = token.email;
       }
       return session;
