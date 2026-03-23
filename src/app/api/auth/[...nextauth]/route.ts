@@ -64,6 +64,17 @@ const handler = NextAuth({
       return baseUrl;
     }
   },
+  logger: {
+    error(code, metadata) {
+      console.error("[NextAuth Error]", code, metadata);
+    },
+    warn(code) {
+      console.warn("[NextAuth Warn]", code);
+    },
+    debug(code, metadata) {
+      console.log("[NextAuth Debug]", code, metadata);
+    }
+  },
   pages: {
     signIn: '/login',
   },
@@ -72,7 +83,7 @@ const handler = NextAuth({
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: false,
+  debug: true,
 });
 
 export { handler as GET, handler as POST };
